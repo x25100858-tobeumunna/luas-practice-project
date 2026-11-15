@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b0d10">
+<title>myLUAS</title>
+<style>
+  :root {
+    --bg: #0b0d10;
+    --panel: #14181d;
+    --panel-2: #1b2027;
+    --line: #262c35;
+    --text: #eef1f4;
+    --muted: #8b95a1;
+    --amber: #ffb627;
+    --red: #e4002b;
+    --green: #00a651;
+    --accent: var(--green);
+    --mono: ui-monospace, "SF Mono", "Cascadia Mono", "Roboto Mono", Menlo, Consolas, monospace;
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, Helvetica, Arial, sans-serif;
+  }
+  body.red { --accent: var(--red); }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { background: var(--bg); }
+  body {
+    font-family: var(--sans);
+    color: var(--text);
+    min-height: 100dvh;
+    display: flex; flex-direction: column;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { width: 100%; max-width: 560px; margin: 0 auto; padding: 0 16px; }
+
+  /* Header */
+  header {
+    padding-top: max(16px, env(safe-area-inset-top));
+    border-top: 6px solid var(--accent);
+    transition: border-color .3s;
+  }
+  .top { display: flex; align-items: center; justify-content: space-between; padding: 14px 0 6px; }
+  .logo { font-weight: 800; font-size: 1.5rem; letter-spacing: -.5px; }
+  .logo span { color: var(--accent); transition: color .3s; }
+  .live {
+    display: inline-flex; align-items: center; gap: 7px;
+    font-size: .75rem; color: var(--muted); text-transform: uppercase; letter-spacing: 1.2px;
+  }
+  .live i { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
+  .live.on i { background: #4ade80; animation: pulse 2s infinite; }
+  .live.off i { background: var(--red); }
+  @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(74,222,128,.6); } 70% { box-shadow: 0 0 0 8px rgba(74,222,128,0); } 100% { box-shadow: 0 0 0 0 rgba(74,222,128,0); } }
+
+  /* Stop picker */
+  label.pick { display: block; margin-top: 14px; font-size: .72rem; color: var(--muted); text-transform: uppercase; letter-spacing: 1.4px; }
+  .select-wrap { position: relative; margin-top: 6px; }
+  select {
+    width: 100%; appearance: none; -webkit-appearance: none;
+    font: inherit; font-size: 1.15rem; font-weight: 650; color: var(--text);
+    background: var(--panel); border: 1.5px solid var(--line); border-radius: 14px;
+    padding: 14px 44px 14px 16px; cursor: pointer;
+  }
+  select:focus { outline: none; border-color: var(--accent); }
+  .select-wrap::after {
+    content: ""; position: absolute; right: 18px; top: 50%; width: 10px; height: 10px;
+    border-right: 2.5px solid var(--muted); border-bottom: 2.5px solid var(--muted);
+    transform: translateY(-70%) rotate(45deg); pointer-events: none;
+  }
+
+  /* Stop title */
+  .stop-title { display: flex; align-items: baseline; gap: 10px; margin: 22px 0 4px; flex-wrap: wrap; }
+  .stop-title h1 { font-size: clamp(1.8rem, 8vw, 2.4rem); font-weight: 800; letter-spacing: -.8px; line-height: 1.1; }
+  .pill {
+    font-size: .7rem; font-weight: 800; text-transform: uppercase; letter-spacing: 1px;
+    padding: 4px 9px; border-radius: 999px; background: var(--accent); color: #fff;
+  }
+
+  /* Service message */
+  .message {
+    display: flex; gap: 10px; align-items: flex-start;
+    margin-top: 14px; padding: 12px 14px; border-radius: 14px;
+    background: var(--panel); border: 1px solid var(--line);
+    font-size: .92rem; line-height: 1.45; color: #cfd6dd;
+  }
+  .message svg { flex-shrink: 0; margin-top: 2px; }
+
+  /* Error */
+  .error {
+    margin-top: 14px; padding: 12px 14px; border-radius: 14px;
+    background: #2a1215; border: 1px solid #6b1f28; color: #ffc9cf;
+    font-size: .92rem; line-height: 1.45;
+  }
+  .error b { color: #fff; }
+  .error button {
+    margin-top: 8px; font: inherit; font-size: .82rem; font-weight: 700;
+    background: #ffc9cf; color: #2a1215; border: none; border-radius: 999px; padding: 6px 14px; cursor: pointer;
+  }
+  [hidden] { display: none !important; }
+
+  /* Directions */
+  main { flex: 1; }
+  .directions { display: grid; gap: 14px; margin-top: 18px; }
+  .dir {
+    background: var(--panel); border: 1px solid var(--line); border-radius: 18px; overflow: hidden;
+  }
+  .dir h2 {
+    display: flex; align-items: center; gap: 8px;
+    font-size: .78rem; text-transform: uppercase; letter-spacing: 1.6px; color: var(--muted);
+    padding: 12px 16px; background: var(--panel-2); border-bottom: 1px solid var(--line);
+  }
+  .dir h2::before { content: ""; width: 8px; height: 8px; border-radius: 2px; background: var(--accent); }
+  .tram {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    padding: 14px 16px; border-bottom: 1px solid var(--line);
+  }
+  .tram:last-child { border-bottom: none; }
+  .dest { font-size: 1.15rem; font-weight: 650; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .tram:first-of-type .dest { font-size: 1.3rem; }
+  .due {
+    font-family: var(--mono); font-variant-numeric: tabular-nums;
+    color: var(--amber); text-shadow: 0 0 14px rgba(255,182,39,.35);
+    font-weight: 700; text-align: right; white-space: nowrap; flex-shrink: 0;
+  }
+  .due .n { font-size: 2.6rem; line-height: 1; }
+  .tram:first-of-type .due .n { font-size: 3.2rem; }
+  .due .u { font-size: .9rem; margin-left: 4px; color: #d99a20; }
+  .due.now .n { font-size: 2rem; letter-spacing: 1px; animation: blink 1.2s steps(2, start) infinite; }
+  .tram:first-of-type .due.now .n { font-size: 2.3rem; }
+  @keyframes blink { to { opacity: .35; } }
+  .none { padding: 18px 16px; color: var(--muted); font-size: .95rem; }
+
+  /* Skeleton while loading */
+  .sk { height: 64px; margin: 10px 16px; border-radius: 10px;
+    background: linear-gradient(90deg, #171b21, #20262e, #171b21); background-size: 200% 100%; animation: sk 1.3s infinite; }
+  @keyframes sk { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+
+  /* Updated bar */
+  .updated {
+    display: flex; justify-content: space-between; align-items: center; gap: 10px;
+    margin-top: 16px; font-size: .82rem; color: var(--muted);
+  }
+  .updated b { color: var(--text); font-family: var(--mono); font-weight: 600; }
+  .refresh {
+    font: inherit; font-size: .82rem; font-weight: 700; color: var(--text);
+    background: var(--panel); border: 1px solid var(--line); border-radius: 999px;
+    padding: 7px 14px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;
+  }
+  .refresh:hover { border-color: var(--accent); }
+  .refresh.spin svg { animation: spin .8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .bar { height: 3px; background: var(--line); border-radius: 3px; margin-top: 10px; overflow: hidden; }
+  .bar i { display: block; height: 100%; width: 0; background: var(--accent); }
+
+  footer {
+    margin-top: 28px; padding: 18px 0 max(18px, env(safe-area-inset-bottom));
+    border-top: 1px solid var(--line); font-size: .78rem; color: var(--muted); text-align: center;
+  }
+
+  @media (min-width: 720px) {
+    .wrap { max-width: 880px; }
+    .directions { grid-template-columns: 1fr 1fr; }
+  }
+  @media (prefers-reduced-motion: reduce) { * { animation: none !important; } }
+</style>
+</head>
+<body class="green">
+  <header>
+    <div class="wrap">
+      <div class="top">
+        <div class="logo">my<span>LUAS</span></div>
+        <div class="live" id="live"><i></i><span id="liveText">Connecting</span></div>
+      </div>
+      <label class="pick" for="stop">My stop</label>
+      <div class="select-wrap">
+        <select id="stop" aria-label="Choose your stop"><option>Loading stops…</option></select>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <div class="wrap">
+      <div class="stop-title">
+        <h1 id="stopName">…</h1>
+        <span class="pill" id="linePill" hidden></span>
+      </div>
+
+      <div class="error" id="error" hidden></div>
+
+      <div class="message" id="message" hidden>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+        <span id="messageText"></span>
+      </div>
+
+      <div class="directions" id="directions">
+        <section class="dir"><h2>Loading</h2><div class="sk"></div><div class="sk"></div><div class="sk"></div></section>
+        <section class="dir"><h2>Loading</h2><div class="sk"></div><div class="sk"></div><div class="sk"></div></section>
+      </div>
+
+      <div class="updated">
+        <span>Last updated <b id="updated">--:--:--</b></span>
+        <button class="refresh" id="refresh" type="button">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/></svg>
+          <span id="countdown">Refresh</span>
+        </button>
+      </div>
+      <div class="bar"><i id="bar"></i></div>
+    </div>
+  </main>
+
+  <footer>
+    <div class="wrap">Data: Transport Infrastructure Ireland. Built by Tobe Umunna for BDAIB.</div>
+  </footer>
+
+<script>
+const API = "https://luas-class.kluxy.app";
+const DEFAULT_STOP = "MYS";
+const STORE_KEY = "myluas.stop";
+const REFRESH_MS = 20000;
+
+const $ = id => document.getElementById(id);
+const select = $("stop");
+let stops = [];
+let currentStop = load() || DEFAULT_STOP;
+let nextAt = 0, timer = null, inFlight = null;
+
+/* ---------- small helpers ---------- */
+function load() { try { return localStorage.getItem(STORE_KEY); } catch { return null; } }
+function save(v) { try { localStorage.setItem(STORE_KEY, v); } catch {} }
+const pad = n => String(n).padStart(2, "0");
+const clock = d => pad(d.getHours()) + ":" + pad(d.getMinutes()) + ":" + pad(d.getSeconds());
+function esc(s) { return String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
+
+async function getJSON(url) {
+  const ctrl = new AbortController();
+  const t = setTimeout(() => ctrl.abort(), 12000);
+  let res;
+  try { res = await fetch(url, { cache: "no-store", signal: ctrl.signal }); }
+  catch (e) { throw new Error(e.name === "AbortError" ? "The request timed out." : "Network error: " + e.message); }
+  finally { clearTimeout(t); }
+  const text = await res.text();
+  let data; try { data = JSON.parse(text); } catch { data = null; }
+  if (!res.ok) {
+    const detail = (data && (data.error || data.message)) || text.slice(0, 160) || res.statusText;
+    throw new Error("HTTP " + res.status + ": " + detail);
+  }
+  if (data === null) throw new Error("The server sent something that isn't valid JSON.");
+  return data;
+}
+
+function showError(where, err) {
+  const box = $("error");
+  box.innerHTML = "<b>" + esc(where) + "</b><br>" + esc(err && err.message ? err.message : String(err)) +
+    '<br><button type="button" id="retry">Try again</button>';
+  box.hidden = false;
+  $("retry").onclick = () => refresh();
+  $("live").className = "live off"; $("liveText").textContent = "Offline";
+}
+function clearError() { $("error").hidden = true; }
+
+/* ---------- stops ---------- */
+function setLine(line) {
+  const l = String(line || "").toLowerCase() === "red" ? "red" : "green";
+  document.body.className = l;
+  const pill = $("linePill");
+  pill.textContent = l === "red" ? "Red Line" : "Green Line";
+  pill.hidden = false;
+}
+
+async function loadStops() {
+  const data = await getJSON(API + "/stops");
+  if (!data || !Array.isArray(data.stops) || !data.stops.length) throw new Error("The stop list came back empty.");
+  stops = data.stops;
+  select.innerHTML = "";
+  [["red", "Red Line"], ["green", "Green Line"]].forEach(([key, label]) => {
+    const group = document.createElement("optgroup");
+    group.label = label;
+    stops.filter(s => String(s.line).toLowerCase() === key).forEach(s => {
+      const o = document.createElement("option");
+      o.value = s.id; o.textContent = s.name;
+      group.appendChild(o);
+    });
+    if (group.children.length) select.appendChild(group);
+  });
+  if (!stops.some(s => s.id === currentStop)) currentStop = stops.some(s => s.id === DEFAULT_STOP) ? DEFAULT_STOP : stops[0].id;
+  select.value = currentStop;
+  const s = stops.find(x => x.id === currentStop);
+  if (s) { $("stopName").textContent = s.name; setLine(s.line); }
+}
+
+/* ---------- forecast ---------- */
+function dueHTML(due) {
+  const n = Number(due);
+  if (due === 0 || n === 0 || String(due).toLowerCase() === "due") return '<div class="due now"><span class="n">Due</span></div>';
+  if (Number.isFinite(n)) return '<div class="due"><span class="n">' + n + '</span><span class="u">min</span></div>';
+  return '<div class="due"><span class="n" style="font-size:1.4rem">' + esc(due) + "</span></div>";
+}
+
+function render(data) {
+  $("stopName").textContent = data.stopName || (stops.find(s => s.id === currentStop) || {}).name || currentStop;
+
+  const msg = String(data.message || "").trim();
+  $("messageText").textContent = msg;
+  $("message").hidden = !msg;
+
+  const dirs = Array.isArray(data.directions) ? data.directions : [];
+  const wrap = $("directions");
+  if (!dirs.length) {
+    wrap.innerHTML = '<section class="dir"><h2>Trams</h2><div class="none">No tram information for this stop right now.</div></section>';
+    return;
+  }
+  wrap.innerHTML = dirs.map(d => {
+    const trams = (Array.isArray(d.trams) ? d.trams : []).slice(0, 3);
+    const rows = trams.length
+      ? trams.map(t => '<div class="tram"><div class="dest">' + esc(t.destination || "—") + "</div>" + dueHTML(t.due) + "</div>").join("")
+      : '<div class="none">No trams scheduled.</div>';
+    return '<section class="dir"><h2>' + esc(d.name || "Direction") + "</h2>" + rows + "</section>";
+  }).join("");
+}
+
+async function refresh() {
+  const stop = currentStop;
+  $("refresh").classList.add("spin");
+  const req = getJSON(API + "/forecast?stop=" + encodeURIComponent(stop));
+  inFlight = req;
+  try {
+    const data = await req;
+    if (inFlight !== req || stop !== currentStop) return; // a newer request has taken over
+    render(data);
+    clearError();
+    $("updated").textContent = clock(new Date());
+    $("live").className = "live on"; $("liveText").textContent = "Live";
+  } catch (e) {
+    if (inFlight === req) showError("Couldn't load live trams for this stop.", e);
+  } finally {
+    if (inFlight === req) $("refresh").classList.remove("spin");
+    schedule();
+  }
+}
+
+/* ---------- 20-second refresh loop with countdown ---------- */
+function schedule() {
+  clearTimeout(timer);
+  nextAt = Date.now() + REFRESH_MS;
+  timer = setTimeout(refresh, REFRESH_MS);
+}
+setInterval(() => {
+  if (!nextAt) return;
+  const left = Math.max(0, nextAt - Date.now());
+  $("countdown").textContent = "Refresh in " + Math.ceil(left / 1000) + "s";
+  $("bar").style.width = (100 - (left / REFRESH_MS) * 100) + "%";
+}, 250);
+
+document.addEventListener("visibilitychange", () => {
+  if (!document.hidden && Date.now() > nextAt) refresh(); // catch up after the phone wakes
+});
+
+/* ---------- events ---------- */
+select.addEventListener("change", () => {
+  currentStop = select.value;
+  save(currentStop);
+  const s = stops.find(x => x.id === currentStop);
+  if (s) { $("stopName").textContent = s.name; setLine(s.line); }
+  $("message").hidden = true;
+  $("directions").innerHTML = '<section class="dir"><h2>Loading</h2><div class="sk"></div><div class="sk"></div><div class="sk"></div></section>';
+  refresh();
+});
+$("refresh").addEventListener("click", () => refresh());
+
+/* ---------- start ---------- */
+(async function start() {
+  try {
+    await loadStops();
+  } catch (e) {
+    showError("Couldn't load the stop list.", e);
+    select.innerHTML = '<option value="' + esc(currentStop) + '">' + esc(currentStop) + "</option>";
+  }
+  refresh();
+})();
+</script>
+</body>
+</html>
